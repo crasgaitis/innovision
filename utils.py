@@ -2,6 +2,8 @@ import time
 import math
 import pandas as pd
 import tobii_research as tr
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 
 global global_gaze_data
 
@@ -82,7 +84,7 @@ def process_dataframe(df):
     validity_columns = [col for col in df.columns if 'validity' in col]
     df = df[~(df[validity_columns] == 0).any(axis=1)]
 
-    columns_to_drop = ['device_time_stamp'] # 'Unnamed: 0', 
+    columns_to_drop = ['Unnamed: 0', 'device_time_stamp'] # 'Unnamed: 0', 
     
     df = df.drop(columns=columns_to_drop)
     df = df.drop(columns=validity_columns)
@@ -96,7 +98,7 @@ def get_gazepoints(df, side = "left"):
     coordinate_pattern = r'\((-?\d+\.\d+), (-?\d+\.\d+)\)'
 
     df['coordinates'] = df[col_name].str.findall(coordinate_pattern)
-
+    
     x_col = 'x_' + side
     y_col = 'y_' + side
     df[[x_col, y_col]] = pd.DataFrame(df['coordinates'].apply(lambda x: x[0] if x else [None, None]).tolist(), index=df.index)
@@ -107,3 +109,73 @@ def get_gazepoints(df, side = "left"):
     df = df.drop(columns=columns_to_drop)
     
     return df
+
+def convert_columns_to_float(df, columns):
+    for col in columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce', downcast='float')
+        
+def calculate_grouped_statistics(group):
+    output_df = pd.DataFrame()
+
+    avg_left_pupil_diameter = group['left_pupil_diameter'].mean()
+    avg_right_pupil_diameter = group['right_pupil_diameter'].mean()
+    avg_x_left = group['x_left'].mean()
+    avg_x_right = group['x_right'].mean()
+    avg_y_left = group['y_left'].mean()
+    avg_y_right = group['y_right'].mean()
+
+    max_x_velocity = max(group['x_left'].diff().max(), group['x_right'].diff().max())
+    max_y_velocity = max(group['y_left'].diff().max(), group['y_right'].diff().max())
+
+    output_df = output_df.append({
+        'avg_left_pupil_diameter': avg_left_pupil_diameter,
+        'avg_right_pupil_diameter': avg_right_pupil_diameter,
+        'avg_x_left': avg_x_left,
+        'avg_x_right': avg_x_right,
+        'avg_y_left': avg_y_left,
+        'avg_y_right': avg_y_right,
+        'max_x_velocity': max_x_velocity,
+        'max_y_velocity': max_y_velocity
+    }, ignore_index=True)
+
+    return output_df
+
+def plot_circles(radius1, radius2):
+    fig, ax = plt.subplots()
+
+    circle1 = Circle((3, 1), radius1, fill=True, color='#415A6A', linewidth=2)
+    circle2 = Circle((10, 1), radius2, fill=True, color='#51416A', linewidth=2)
+
+    ax.add_patch(circle1)
+    ax.add_patch(circle2)
+
+    ax.set_xlim(-2, 15)
+    ax.set_ylim(-6, 6)
+
+    ax.set_aspect('equal')
+
+    ax.text(0, -4, f"Left diameter: {radius1 * 2}", fontsize=12, color='#415A6A')
+    ax.text(0, -5, f"Right diameter: {radius2 * 2}", fontsize=12, color='#51416A')
+
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.axis('off')
+
+    desired_width = 350
+    fig_width, fig_height = fig.get_size_inches()
+    dpi = int(desired_width / fig_width)
+    
+    plt.savefig("radius_eyes.png", dpi=dpi)
+    
+def plot_gazepoints(x_left, y_left, x_right, y_right):
+    plt.scatter(float(x_left), float(y_left), color = "#415A6A", label = "Left", s=20)
+    plt.scatter(float(x_right), float(y_right), color = "#51416A", label = "Right", s=20)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.grid(True)
+    plt.legend()
+    plt.xticks([0, 0.5, 1])
+    plt.yticks([0, 0.5, 1])
+
+    plt.savefig("gaze_grid.png")

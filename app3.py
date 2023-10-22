@@ -77,7 +77,7 @@ with st.container():
     
     tracker = get_tracker()
     data = eye_img_data(tracker)
-    data = gaze_data(tracker, 0.25)
+    data = gaze_data(tracker, 1)
     
     st.subheader('1. Set up your tracking info')
     
@@ -102,8 +102,9 @@ with st.container():
             data = eye_img_data(tracker)
             image_io = BytesIO(data['image_data'])
             image = PILImage.open(image_io)
-            image_placeholder.image(image, caption="Eye Image")
-            
+            image_placeholder.image(image, caption="Eye Image") 
+        
+        st.subheader('Tracking your eye movements...')
         df, _ = build_dataset(tracker, 'user', time_step_sec=time_step, tot_time_min=record_time)
 
         st.write(df)
