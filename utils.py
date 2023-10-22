@@ -35,10 +35,9 @@ def eye_img_data_callback(eye_data):
   global global_eye
   global_eye = eye_data
   
-def eye_img_data(eyetracker, wait_time=5):
+def eye_img_data(eyetracker, wait_time=0.5):
   global global_eye
 
-  # print("Getting data...")
   eyetracker.subscribe_to(tr.EYETRACKER_EYE_IMAGES, eye_img_data_callback, as_dictionary=True)
 
   time.sleep(wait_time)
