@@ -78,7 +78,7 @@ with st.container():
     image = Image.open('eyeball.png')
     st.image(image)
 
-    st.header('Innovsion')
+    st.header('Innovision')
     st.write("Whether you're in a work meeting on Zoom or rewatching lectures on Panopto, staying attentive online is hard. At Innovision, it's easy to gauge your attention levels based on eye tracking technology. ")
     
     tracker = get_tracker()
