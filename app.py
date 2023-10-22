@@ -7,8 +7,9 @@ from PIL import Image
 from io import BytesIO
 from PIL import Image as PILImage
 from flask import session
+from streamlit_extras.switch_page_button import switch_page
 
-from utils import build_dataset, calculate_grouped_statistics, convert_columns_to_float, eye_img_data, gaze_data, get_gazepoints, get_tracker, process_dataframe
+from utils import eye_img_data, get_tracker, process_dataframe
 
 st.markdown(
      f"""
@@ -77,59 +78,21 @@ with st.container():
     
     tracker = get_tracker()
     data = eye_img_data(tracker)
-    data = gaze_data(tracker, 0.25)
     
-    st.subheader('1. Set up your tracking info')
+    st.subheader('Make sure we can see you!')
+    st.write("Click the READY button once you're in position.")
     
-    record_time = st.number_input('How many minutes do you want to record for?', value = 0.1)
-    time_step = st.number_input('How many seconds between each recorded gaze-point?', value = 0.1)
+    placeholder_image = PILImage.new("RGB", (640, 480))
+    image_placeholder = st.image(placeholder_image, caption="Eye Image")
     
     if st.button('Ready'):
-        st.session_state.record = True
+        st.session_state.ready = True
     
-    if st.session_state.record:
-        st.subheader('2. Make sure we can see you!')
-        st.write("Click the READY button once you're in position.")
+    while not st.session_state.ready:
+        # update image
+        data = eye_img_data(tracker)
+        image_io = BytesIO(data['image_data'])
+        image = PILImage.open(image_io)
+        image_placeholder.image(image, caption="Eye Image")
         
-        placeholder_image = PILImage.new("RGB", (640, 480))
-        image_placeholder = st.image(placeholder_image, caption="Eye Image")
-        
-        if st.button('Record'):
-            st.session_state.ready = True
-        
-        while not st.session_state.ready:
-            # update image
-            data = eye_img_data(tracker)
-            image_io = BytesIO(data['image_data'])
-            image = PILImage.open(image_io)
-            image_placeholder.image(image, caption="Eye Image")
-            
-        df, _ = build_dataset(tracker, 'user', time_step_sec=time_step, tot_time_min=record_time)
-
-        st.write(df)
-
-        df.to_csv('test.csv')
-        df = pd.read_csv('test.csv')
-
-        st.subheader('All done!')
-        st.write('Hope your online meeting or lecture went well.')
-
-        df = process_dataframe(df)
-        df = get_gazepoints(df)
-        df = get_gazepoints(df, "right")
-        
-        columns_to_convert = ['x_left', 'y_left', 'x_right', 'y_right']
-        convert_columns_to_float(df, columns_to_convert)
-        
-        df = calculate_grouped_statistics(df)
-
-        st.write(df)
-        
-        if clf.predict(df) == 1:
-            response = "Looks like you were paying attention!"
-        
-        else:
-            response = "Looks like you weren't paying attention!"
-        
-        
-        st.write(response)
+    # switch_page("app2")
