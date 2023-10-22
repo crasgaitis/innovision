@@ -61,7 +61,6 @@ with open("eye_model.pkl", 'rb') as file:
     clf = pickle.load(file)
     
 record = False
-ready = False
     
 with st.container():
     
@@ -72,7 +71,7 @@ with st.container():
     st.write("Whether you're in a work meeting on Zoom or rewatching lectures on Panopto, staying attentive online is hard. At Innovision, it's easy to gauge your attention levels based on eye tracking technology. ")
     
     tracker = get_tracker()
-    data = eye_img_data(tracker)
+    data = gaze_data(tracker)
     
     st.subheader('1. Set up your tracking info')
     
@@ -82,32 +81,16 @@ with st.container():
     record = st.button('Ready')    
         
     if record:
-        data = gaze_data(tracker)
-        st.subheader('2. Make sure we can see you!')
-        st.write("Click the READY button once you're in position.")
-        
-        placeholder_image = PILImage.new("RGB", (640, 480))
-        image_placeholder = st.image(placeholder_image, caption="Eye Image")
-        
-        ready = st.button('Record')
-        
-        while not ready:
-            # update image
-            data = eye_img_data(tracker)
-            image_io = BytesIO(data['image_data'])
-            image = PILImage.open(image_io)
-            image_placeholder.image(image, caption="Eye Image")
-            time.sleep(0.1)
-    
-        print('ok')                
-        st.write('Tracking your eye movements...')
+        st.subheader('Tracking your eye movements...')
         df, _ = build_dataset(tracker, 'user', time_step_sec=time_step, tot_time_min=record_time)
+
+        st.write(df)
 
         st.subheader('All done!')
         st.write('Hope your online meeting or lecture went well.')
 
         df = process_dataframe(df)
         df = get_gazepoints(df)
+        df = get_gazepoints(df, "right")
 
         st.write(df)
-                

@@ -78,4 +78,32 @@ def build_dataset(tracker, label, add_on = False, df_orig = pd.DataFrame(),
     else:
         return df, dict_list
     
+def process_dataframe(df):
+    validity_columns = [col for col in df.columns if 'validity' in col]
+    df = df[~(df[validity_columns] == 0).any(axis=1)]
+
+    columns_to_drop = ['device_time_stamp'] # 'Unnamed: 0', 
     
+    df = df.drop(columns=columns_to_drop)
+    df = df.drop(columns=validity_columns)
+
+    return df
+
+def get_gazepoints(df, side = "left"):
+    
+    col_name = side + "_gaze_point_on_display_area"
+
+    coordinate_pattern = r'\((-?\d+\.\d+), (-?\d+\.\d+)\)'
+
+    df['coordinates'] = df[col_name].str.findall(coordinate_pattern)
+
+    x_col = 'x_' + side
+    y_col = 'y_' + side
+    df[[x_col, y_col]] = pd.DataFrame(df['coordinates'].apply(lambda x: x[0] if x else [None, None]).tolist(), index=df.index)
+
+    df = df.drop(columns = ['coordinates', col_name])
+    
+    columns_to_drop = [col for col in df.columns if 'coordinate' in col and side in col]
+    df = df.drop(columns=columns_to_drop)
+    
+    return df
